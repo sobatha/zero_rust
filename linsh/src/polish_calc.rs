@@ -49,13 +49,13 @@ fn parse_num(input: &str) -> IResult<&str, Expr> {
 }
 
 fn parse_op(c: &str) -> IResult<&str, Expr> {
-    let (remaining_input, op) = one_of("+*")(c)?;
-    let (remaining_input, e1) = parse_expr(c)?;
-    let (remaining_input, e2) = parse_expr(c)?;
+    let (c, op) = one_of("+*")(c)?;
+    let (c, e1) = parse_expr(c)?;
+    let (c, e2) = parse_expr(c)?;
 
     match op {
         '+' => Ok((c, Expr::Add(Box::new(e1), Box::new(e2)))),
-        '-' => Ok((c, Expr::Mul(Box::new(e1), Box::new(e2)))),
+        '*' => Ok((c, Expr::Mul(Box::new(e1), Box::new(e2)))),
         _ => todo!()
     }
 }
