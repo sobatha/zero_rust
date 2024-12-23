@@ -1,4 +1,6 @@
 mod polish_calc;
+mod parser;
+
 use rustyline::Editor;
 use crate::polish_calc::{parse, eval};
 
