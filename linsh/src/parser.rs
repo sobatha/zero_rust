@@ -1,14 +1,14 @@
 use nom::{
     branch::alt,
-    bytes::{complete::tag},
+    bytes::complete::tag,
     character::complete::{alpha1, char, multispace0, multispace1},
     error::VerboseError,
     sequence::delimited,
     IResult,
 };
-use std::fmt;
+use std::{char, fmt};
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Expr {
     Let(LetExpr),
     If(IfExpr),
@@ -19,28 +19,28 @@ pub enum Expr {
     QVal(QValExpr),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct AppExpr {
     pub expr1: Box<Expr>,
     pub expr2: Box<Expr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct IfExpr {
     pub cond_expr: Box<Expr>,
     pub then_expr: Box<Expr>,
     pub else_expr: Box<Expr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct SplitExpr {
     pub expr: Box<Expr>,
-    pub left: Box<Expr>,
-    pub right: Box<Expr>,
+    pub left: String,
+    pub right: String,
     pub body: Box<Expr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct LetExpr {
     pub var: String,
     pub ty: TypeExpr,
@@ -48,45 +48,45 @@ pub struct LetExpr {
     pub expr2: Box<Expr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum ValExpr {
     Bool(bool),
     Pair(Box<Expr>, Box<Expr>),
     Fun(FnExpr),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Qual {
     Lin,
     Un,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct QValExpr {
     pub qual: Qual,
     pub val: ValExpr,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct FnExpr {
     pub var: String,
     pub ty: TypeExpr,
     pub expr: Box<Expr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct FreeExpr {
     pub var: String,
     pub expr: Box<Expr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct TypeExpr {
     pub qual: Qual,
     pub prim: PrimType,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum PrimType {
     Bool,
     Pair(Box<TypeExpr>, Box<TypeExpr>),
@@ -243,7 +243,32 @@ fn parse_split(i: &str) -> IResult<&str, Expr, VerboseError<&str>> {
 }
 
 fn parse_if(i: &str) -> IResult<&str, Expr, VerboseError<&str>> {
-    todo!()
+    let (i, _) = multispace0(i)?;
+    let (i, cond_expr) = parse_expr(i)?;
+    let (i, _) = multispace0(i)?;
+
+    let (i, then_expr) = delimited(
+        char('{'),
+        delimited(multispace0, parse_expr, multispace0),
+        char('}'),
+    )(i)?;
+    let (i, _) = multispace0(i)?;
+    let (i, _) = tag("else")(i)?;
+    let (i, _) = multispace0(i)?;
+    let (i, else_expr) = delimited(
+        char('{'),
+        delimited(multispace0, parse_expr, multispace0),
+        char('}'),
+    )(i)?;
+
+    return Ok((
+        i,
+        Expr::If(IfExpr {
+            cond_expr: Box::new(cond_expr),
+            then_expr: Box::new(then_expr),
+            else_expr: Box::new(else_expr),
+        }),
+    ));
 }
 
 fn parse_let(i: &str) -> IResult<&str, Expr, VerboseError<&str>> {
